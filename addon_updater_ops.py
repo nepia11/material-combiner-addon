@@ -18,17 +18,19 @@
 
 import os
 from subprocess import call
+import sys
 
 import bpy
 from bpy.app.handlers import persistent
 from .icons import get_icon_id
+
+PYTHON_PATH = sys.executable
 
 try:
     from .addon_updater import Updater
 except Exception as e:
     print("ERROR INITIALIZING UPDATER")
     print(str(e))
-
 
     class SingletonUpdaterNone(object):
         def __init__(self):
@@ -51,7 +53,6 @@ except Exception as e:
 
         def check_for_update(self): pass
 
-
     Updater = SingletonUpdaterNone()
     Updater.error = "Error initializing updater module"
     Updater.error_msg = str(e)
@@ -63,9 +64,11 @@ def make_annotations(cls):
     if not hasattr(bpy.app, "version") or bpy.app.version < (2, 80):
         return cls
     if bpy.app.version < (2, 93, 0):
-        bl_props = {k: v for k, v in cls.__dict__.items() if isinstance(v, tuple)}
+        bl_props = {k: v for k, v in cls.__dict__.items()
+                    if isinstance(v, tuple)}
     else:
-        bl_props = {k: v for k, v in cls.__dict__.items() if isinstance(v, bpy.props._PropertyDeferred)}
+        bl_props = {k: v for k, v in cls.__dict__.items(
+        ) if isinstance(v, bpy.props._PropertyDeferred)}
     if bl_props:
         if '__annotations__' not in cls.__dict__:
             setattr(cls, '__annotations__', {})
@@ -142,7 +145,8 @@ class AddonUpdaterInstallPopup(bpy.types.Operator):
             col.scale_y = 0.7
             col.label(text="Update {} ready!".format(str(Updater.update_version)),
                       icon="LOOP_FORWARDS")
-            col.label(text="Choose 'Update Now' & press OK to install, ", icon="BLANK1")
+            col.label(
+                text="Choose 'Update Now' & press OK to install, ", icon="BLANK1")
             col.label(text="or click outside window to defer", icon="BLANK1")
             row = col.row()
             row.prop(self, "ignore_enum", expand=True)
@@ -205,7 +209,8 @@ class AddonUpdaterCheckNow(bpy.types.Operator):
         settings = get_user_preferences(context)
         if not settings:
             if Updater.verbose:
-                print("Could not get {} preferences, update check skipped".format(__package__))
+                print("Could not get {} preferences, update check skipped".format(
+                    __package__))
             return {'CANCELLED'}
         Updater.set_check_interval(enable=settings.auto_check_update,
                                    months=settings.updater_intrval_months,
@@ -215,12 +220,15 @@ class AddonUpdaterCheckNow(bpy.types.Operator):
         Updater.check_for_update_now(ui_refresh)
         try:
             import pip
-            call([bpy.app.binary_path_python, '-m', 'pip', 'install', 'pip', '--user', '--upgrade'], shell=True)
-            call([bpy.app.binary_path_python, '-m', 'pip', 'install', 'Pillow', '--user', '--upgrade'], shell=True)
+            call([PYTHON_PATH, '-m', 'pip', 'install',
+                  'pip', '--user', '--upgrade'], shell=True)
+            call([PYTHON_PATH, '-m', 'pip', 'install',
+                  'Pillow', '--user', '--upgrade'], shell=True)
         except ImportError:
-            call([bpy.app.binary_path_python, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'operators',
-                                                           'get-pip.py'), '--user'], shell=True)
-            call([bpy.app.binary_path_python, '-m', 'pip', 'install', 'Pillow', '--user', '--upgrade'], shell=True)
+            call([PYTHON_PATH, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'operators',
+                                            'get-pip.py'), '--user'], shell=True)
+            call([PYTHON_PATH, '-m', 'pip', 'install',
+                  'Pillow', '--user', '--upgrade'], shell=True)
         return {'FINISHED'}
 
 
@@ -256,7 +264,8 @@ class AddonUpdaterUpdateNow(bpy.types.Operator):
                     if res == 0:
                         print("Updater returned successful")
                     else:
-                        print("Updater returned " + str(res) + ", error occurred")
+                        print("Updater returned " +
+                              str(res) + ", error occurred")
             except Exception as ex:
                 Updater._error = "Error trying to run update"
                 Updater._error_msg = str(ex)
@@ -270,7 +279,8 @@ class AddonUpdaterUpdateNow(bpy.types.Operator):
         elif Updater.update_ready is False:
             self.report({'INFO'}, "Nothing to update")
         else:
-            self.report({'ERROR'}, "Encountered problem while trying to update")
+            self.report(
+                {'ERROR'}, "Encountered problem while trying to update")
 
         return {'FINISHED'}
 
@@ -369,8 +379,10 @@ class AddonUpdaterInstallManually(bpy.types.Operator):
         if self.error != "":
             col = layout.column()
             col.scale_y = 0.7
-            col.label(text="There was an issue trying to auto-install", icon="ERROR")
-            col.label(text="Press the download button below and install", icon="BLANK1")
+            col.label(
+                text="There was an issue trying to auto-install", icon="ERROR")
+            col.label(
+                text="Press the download button below and install", icon="BLANK1")
             col.label(text="the zip file like a normal addon.", icon="BLANK1")
         else:
             col = layout.column()
@@ -391,7 +403,8 @@ class AddonUpdaterInstallManually(bpy.types.Operator):
 
             if Updater.website is not None:
                 row = layout.row()
-                row.operator("wm.url_open", text="Open website").url = Updater.website
+                row.operator(
+                    "wm.url_open", text="Open website").url = Updater.website
             else:
                 row = layout.row()
                 row.label(text="See source website to download the update")
@@ -448,7 +461,8 @@ class AddonUpdaterUpdatedSuccessful(bpy.types.Operator):
             else:
                 col = layout.column()
                 col.scale_y = 0.7
-                col.label(text="Addon successfully installed", icon="FILE_TICK")
+                col.label(text="Addon successfully installed",
+                          icon="FILE_TICK")
                 col.label(text="Restart blender to reload.", icon="BLANK1")
 
         else:
@@ -456,13 +470,16 @@ class AddonUpdaterUpdatedSuccessful(bpy.types.Operator):
                 col = layout.column()
                 col.scale_y = 0.7
                 col.label(text="Addon restored", icon="RECOVER_LAST")
-                col.label(text="Consider restarting blender to fully reload.", icon="BLANK1")
+                col.label(
+                    text="Consider restarting blender to fully reload.", icon="BLANK1")
                 Updater.json_reset_restore()
             else:
                 col = layout.column()
                 col.scale_y = 0.7
-                col.label(text="Addon successfully installed", icon="FILE_TICK")
-                col.label(text="Consider restarting blender to fully reload.", icon="BLANK1")
+                col.label(text="Addon successfully installed",
+                          icon="FILE_TICK")
+                col.label(
+                    text="Consider restarting blender to fully reload.", icon="BLANK1")
 
     def execute(self, context):
         return {'FINISHED'}
@@ -569,7 +586,8 @@ def updater_run_install_popup_handler(_):
 
         if ver_tuple < Updater.current_version:
             if Updater.verbose:
-                print("{} updater: appears user updated, clearing flag".format(Updater.addon))
+                print("{} updater: appears user updated, clearing flag".format(
+                    Updater.addon))
             Updater.json_reset_restore()
             return
     atr = AddonUpdaterInstallPopup.bl_idname.split(".")
@@ -719,9 +737,11 @@ def update_notice_box_ui(self, _):
     col_r = split.column(align=True)
     col_r.scale_y = 1.5
     if Updater.manual_only is False:
-        col_r.operator(AddonUpdaterUpdateNow.bl_idname, text="Update", icon="LOOP_FORWARDS")
+        col_r.operator(AddonUpdaterUpdateNow.bl_idname,
+                       text="Update", icon="LOOP_FORWARDS")
         col.operator("wm.url_open", text="Open website").url = Updater.website
-        col.operator(AddonUpdaterInstallManually.bl_idname, text="Install manually")
+        col.operator(AddonUpdaterInstallManually.bl_idname,
+                     text="Install manually")
     else:
         col.operator("wm.url_open", text="Get it now").url = Updater.website
 
@@ -761,13 +781,15 @@ def update_settings_ui(self, context, element=None):
         split.scale_y = 2
         if "ssl" in Updater.error_msg.lower():
             split.enabled = True
-            split.operator(AddonUpdaterInstallManually.bl_idname, text=Updater.error)
+            split.operator(AddonUpdaterInstallManually.bl_idname,
+                           text=Updater.error)
         else:
             split.enabled = False
             split.operator(AddonUpdaterCheckNow.bl_idname, text=Updater.error)
         split = subcol.split(align=True)
         split.scale_y = 2
-        split.operator(AddonUpdaterCheckNow.bl_idname, text="", icon="FILE_REFRESH")
+        split.operator(AddonUpdaterCheckNow.bl_idname,
+                       text="", icon="FILE_REFRESH")
 
     elif Updater.update_ready is None and Updater.async_checking is False:
         col.scale_y = 2
@@ -793,31 +815,37 @@ def update_settings_ui(self, context, element=None):
                        text="Update directly to " + str(Updater.include_branch_list[0]))
         split = subcol.split(align=True)
         split.scale_y = 2
-        split.operator(AddonUpdaterCheckNow.bl_idname, text="", icon="FILE_REFRESH")
+        split.operator(AddonUpdaterCheckNow.bl_idname,
+                       text="", icon="FILE_REFRESH")
 
     elif Updater.update_ready is True and Updater.manual_only is False:
         subcol = col.row(align=True)
         subcol.scale_y = 1
         split = subcol.split(align=True)
         split.scale_y = 2
-        split.operator(AddonUpdaterUpdateNow.bl_idname, text="Update now to " + str(Updater.update_version))
+        split.operator(AddonUpdaterUpdateNow.bl_idname,
+                       text="Update now to " + str(Updater.update_version))
         split = subcol.split(align=True)
         split.scale_y = 2
-        split.operator(AddonUpdaterCheckNow.bl_idname, text="", icon="FILE_REFRESH")
+        split.operator(AddonUpdaterCheckNow.bl_idname,
+                       text="", icon="FILE_REFRESH")
 
     elif Updater.update_ready is True and Updater.manual_only is True:
         col.scale_y = 2
-        col.operator("wm.url_open", text="Download " + str(Updater.update_version)).url = Updater.website
+        col.operator("wm.url_open", text="Download " +
+                     str(Updater.update_version)).url = Updater.website
     else:
         subcol = col.row(align=True)
         subcol.scale_y = 1
         split = subcol.split(align=True)
         split.enabled = False
         split.scale_y = 2
-        split.operator(AddonUpdaterCheckNow.bl_idname, text="Addon is up to date")
+        split.operator(AddonUpdaterCheckNow.bl_idname,
+                       text="Addon is up to date")
         split = subcol.split(align=True)
         split.scale_y = 2
-        split.operator(AddonUpdaterCheckNow.bl_idname, text="", icon="FILE_REFRESH")
+        split.operator(AddonUpdaterCheckNow.bl_idname,
+                       text="", icon="FILE_REFRESH")
 
     if Updater.manual_only is False:
         col = row.column(align=True)
@@ -880,13 +908,15 @@ def update_settings_ui_condensed(self, context, element=None):
         split.scale_y = 2
         if "ssl" in Updater.error_msg.lower():
             split.enabled = True
-            split.operator(AddonUpdaterInstallManually.bl_idname, text=Updater.error)
+            split.operator(AddonUpdaterInstallManually.bl_idname,
+                           text=Updater.error)
         else:
             split.enabled = False
             split.operator(AddonUpdaterCheckNow.bl_idname, text=Updater.error)
         split = subcol.split(align=True)
         split.scale_y = 2
-        split.operator(AddonUpdaterCheckNow.bl_idname, text="", icon="FILE_REFRESH")
+        split.operator(AddonUpdaterCheckNow.bl_idname,
+                       text="", icon="FILE_REFRESH")
 
     elif Updater.update_ready is None and Updater.async_checking is False:
         col.scale_y = 2
@@ -912,7 +942,8 @@ def update_settings_ui_condensed(self, context, element=None):
                        text="Update directly to " + str(Updater.include_branch_list[0]))
         split = subcol.split(align=True)
         split.scale_y = 2
-        split.operator(AddonUpdaterCheckNow.bl_idname, text="", icon="FILE_REFRESH")
+        split.operator(AddonUpdaterCheckNow.bl_idname,
+                       text="", icon="FILE_REFRESH")
 
     elif Updater.update_ready is True and Updater.manual_only is False:
         subcol = col.row(align=True)
@@ -923,21 +954,25 @@ def update_settings_ui_condensed(self, context, element=None):
                        text="Update now to " + str(Updater.update_version))
         split = subcol.split(align=True)
         split.scale_y = 2
-        split.operator(AddonUpdaterCheckNow.bl_idname, text="", icon="FILE_REFRESH")
+        split.operator(AddonUpdaterCheckNow.bl_idname,
+                       text="", icon="FILE_REFRESH")
 
     elif Updater.update_ready is True and Updater.manual_only is True:
         col.scale_y = 2
-        col.operator("wm.url_open", text="Download " + str(Updater.update_version)).url = Updater.website
+        col.operator("wm.url_open", text="Download " +
+                     str(Updater.update_version)).url = Updater.website
     else:
         subcol = col.row(align=True)
         subcol.scale_y = 1
         split = subcol.split(align=True)
         split.enabled = False
         split.scale_y = 2
-        split.operator(AddonUpdaterCheckNow.bl_idname, text="Addon is up to date")
+        split.operator(AddonUpdaterCheckNow.bl_idname,
+                       text="Addon is up to date")
         split = subcol.split(align=True)
         split.scale_y = 2
-        split.operator(AddonUpdaterCheckNow.bl_idname, text="", icon="FILE_REFRESH")
+        split.operator(AddonUpdaterCheckNow.bl_idname,
+                       text="", icon="FILE_REFRESH")
 
     row = element.row()
     row.prop(settings, "auto_check_update")
